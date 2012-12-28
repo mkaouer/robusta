@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--****************************************************************************
+ * Build Robusta for CI & Wrap for Eclipse Update Site
+ ****************************************************************************-->
+<project name="Robusta" default="all">
+	<property environment="env"/>
+    <property name="ECLIPSE_HOME" value="${env.ECLIPSE_HOME}"/>
+    <property name="debuglevel" value="source,lines,vars"/>
+    <property name="target" value="1.6"/>
+    <property name="source" value="1.6"/>
+    <property name="jar-file-name" value="ntut.csie.robusta_1.1.0.jar"/>
+	<property name="rl-jar-file-name" value="ntut.csie.robusta.agile.exception_1.0.0.jar"/>
+	<property name="result-folder" value="${basedir}/result"/>
+	<property name="xml-folder" value="${result-folder}/xml"/>
+    <property name="update-folder" value="${result-folder}/update"/>
+    <property name="feature-folder" value="${update-folder}/features"/>
+    <property name="plugin-folder" value="${update-folder}/plugins"/>
+	<property name="license-folder" value="${update-folder}/licenses"/>
+	<property name="src-folder" value="${basedir}/src"/>
+	<property name="test-folder" value="${basedir}/test"/>
+	<property name="bin-folder" value="${basedir}/bin"/>
+	<property name="lib-folder" value="${basedir}/lib"/>
+	<property name="update-id" value="ntut.csie.robusta_1.1.0"/>
+	<property name="eclipse-public-license" value="epl-v10.html"/>
+	<property name="notice" value="notice.html"/>
+	
+	<!-- project lib -->
+    <path id="Robusta.classpath">
+    	<fileset dir="${bin-folder}" includes="**/*.*"/>
+    	<fileset dir="${ECLIPSE_HOME}/plugins/" includes="**/*.jar"/>
+    </path>
+	
+	<path id="Robusta.test.classpath">
+		<fileset dir="${lib-folder}" includes="**/*.jar"/>
+		<pathelement path="${bin-folder}"/>
+		<fileset dir="${ECLIPSE_HOME}/plugins/" includes="**/*.jar"/>
+    </path>
+	
+	<!-- OS picker -->
+	<condition property="isMac">
+		<os family="mac"/>
+	</condition>
+
+	<condition property="isWindows">
+		<os family="windows"/>
+	</condition>
+
+	<condition property="isUnix">
+		<os family="unix"/>
+	</condition>
+	
+	<!-- main target -->
+	<target name="all" depends="init, build-project, test, junit-report, remove-other-plugin-lib,
+								agile-jar, product-jar, write-site-xml, write-feature-xml, zip-product">
+		<echo message="Ant build complete"/>
+	</target>
+	
+    <target name="init">
+    	<delete quiet="true" dir="${bin-folder}"/>
+    	<delete quiet="true" dir="${result-folder}"/>
+        <mkdir dir="${bin-folder}"/>
+    	<mkdir dir="${result-folder}"/>
+    	<mkdir dir="${xml-folder}"/>
+		<mkdir dir="${update-folder}"/>
+		<mkdir dir="${feature-folder}"/>
+		<mkdir dir="${plugin-folder}"/>
+		<mkdir dir="${license-folder}"/>
+		<copy todir="${license-folder}">
+			<fileset dir="${basedir}" includes="*.html"/>
+		</copy>
+        <copy includeemptydirs="false" todir="${bin-folder}">
+            <fileset dir="${src-folder}">
+                <exclude name="**/*.launch"/>
+                <exclude name="**/*.java"/>
+            </fileset>
+        </copy>
+        <copy includeemptydirs="false" todir="${bin-folder}">
+            <fileset dir="${test-folder}">
+                <exclude name="**/*.launch"/>
+                <exclude name="**/*.java"/>
+            </fileset>
+        </copy>
+		<copy includeemptydirs="false" todir="${bin-folder}/icons">
+			<fileset dir="${basedir}/icons"/>
+		</copy>
+		<copy includeemptydirs="false" todir="${bin-folder}/lib">
+			<fileset dir="${lib-folder}"/>
+		</copy>
+    	<copy includeemptydirs="false" todir="${bin-folder}">
+			<fileset dir="${basedir}/language"/>
+		</copy>
+    	<copy includeemptydirs="false" todir="${bin-folder}/META-INF">
+			<fileset dir="${basedir}/META-INF"/>
+		</copy>
+		<copy todir="${plugin-folder}">
+			<fileset dir="${lib-folder}">
+				<include name="net.java.amateras.umleditor.java_1.3.1.jar"/>
+				<include name="net.java.amateras.umleditor_1.3.1.jar"/>
+				<include name="net.java.amateras.xstream_1.3.1.jar"/>
+				<include name="org.eclipse.draw2d_3.2.100.v20070529.jar"/>
+				<include name="org.eclipse.gef_3.2.101.v20070814.jar"/>
+				<include name="org.eclipse.jdt.astview_1.1.3.jar"/>
+			</fileset>
+		</copy>
+		<copy file="${basedir}/plugin.xml" tofile="${bin-folder}/plugin.xml"/>
+    	<copy file="${basedir}/plugin.properties" tofile="${bin-folder}/plugin.properties"/>
+    	<copy file="${basedir}/build.properties" tofile="${bin-folder}/build.properties"/>
+    </target>
+	
+	<!-- compile project -->
+    <target name="build-project">
+        <javac srcdir="${src-folder}:${test-folder}" debug="true" debuglevel="${debuglevel}" destdir="${bin-folder}" source="${source}" target="${target}" includeantruntime="false" encoding="MS950">
+            <classpath refid="Robusta.classpath"/>
+        </javac>
+    </target>
+	<!-- run junit test -->
+	<target name="test">
+		<junit printsummary="yes">
+			<formatter type="xml"/>
+			<batchtest todir="${xml-folder}">
+				<fileset dir="${bin-folder}">
+					<include name="**/AllJUnitTests.class"/>
+				</fileset>
+			</batchtest>
+			<classpath refid="Robusta.test.classpath"/>
+		</junit>
+	</target>
+	
+	<!-- junit report -->
+	<target name="junit-report">
+		<junitreport todir="${xml-folder}">
+			<fileset dir="${xml-folder}">
+				<include name="TEST-*.xml"/>
+			</fileset>
+			<report format="frames" todir="${result-folder}"/>
+		</junitreport>
+	</target>
+	 
+	<target name="remove-other-plugin-lib">
+		<delete>
+			<fileset dir="${bin-folder}/lib">
+				<include name="net.java.amateras.umleditor.java_1.3.1.jar"/>
+				<include name="net.java.amateras.umleditor_1.3.1.jar"/>
+				<include name="net.java.amateras.xstream_1.3.1.jar"/>
+				<include name="org.eclipse.draw2d_3.2.100.v20070529.jar"/>
+				<include name="org.eclipse.gef_3.2.101.v20070814.jar"/>
+				<include name="org.eclipse.jdt.astview_1.1.3.jar"/>
+			</fileset>
+		</delete>
+	</target>
+	
+	<target name="agile-jar">
+		<jar destfile="${update-folder}/${rl-jar-file-name}" filesetmanifest="mergewithoutmain" basedir="${bin-folder}" includes="**/RTag.class, **/Robustness.class, **/SuppressSmell.class">
+			<manifest>
+				<attribute name="ClassPath" value="."/>
+			</manifest>
+		</jar>
+	</target>
+	
+	<!-- wrap bin folder to jar file -->
+	<target name="product-jar">
+		<jar destfile="${plugin-folder}/${jar-file-name}" filesetmanifest="mergewithoutmain" basedir="${bin-folder}" excludes="**/filemaker/, **/*Test.class">
+			<!--<manifest>
+				<attribute name="Bundle-ManifestVersion" value="2"/>
+				<attribute name="Bundle-Name" value="Robusta Plug-in"/>
+				<attribute name="Bundle-SymbolicName" value="Robusta; singleton:=true"/>
+				<attribute name="Bundle-Version" value="1.1.0"/>
+				<attribute name="Bundle-Activator" value="ntut.csie.rleht.RLEHTPlugin"/>
+				<attribute name="Bundle-Vendor" value="NTUT CSIE, Taipei Tech, Software Systems Lab"/>
+				<attribute name="Bundle-Localization" value="plugin"/>
+				<attribute name="Bundle-ClassPath" value=".,./bin,lib/commons-lang-2.3.jar,lib/slf4j-log4j12-1.5.0.jar,lib/slf4j-api-1.5.0.jar,lib/log4j-1.2.15.jar,lib/jdom.jar,lib/jfreechart-1.0.8a.jar,lib/jcommon-1.0.12.jar,lib/loc_counter.jar,lib/"/>
+				<attribute name="Require-Bundle" value="org.eclipse.ui,org.eclipse.core.runtime,org.eclipse.jdt,org.eclipse.jdt.core,org.eclipse.core.resources,org.eclipse.ltk.core.refactoring,org.eclipse.ltk.ui.refactoring,org.eclipse.jface.text,org.eclipse.ui.editors,org.eclipse.jdt.ui,org.eclipse.ui.workbench.texteditor,org.eclipse.ui.console,org.eclipse.ui.ide,org.eclipse.compare,org.eclipse.jdt.junit,net.java.amateras.umleditor,net.java.amateras.umleditor.java,net.java.amateras.xstream,org.eclipse.draw2d,org.eclipse.gef,org.eclipse.jdt.launching,org.junit,org.eclipse.jdt.astview,org.eclipse.jdt.core.manipulation"/>
+				<attribute name="Eclipse-LazyStart" value="true"/>
+		    </manifest>-->
+		</jar>
+    </target>
+
+	<!-- write a site.xml for eclipse update -->
+	<target name="write-site-xml">
+		<echoxml file="${update-folder}/site.xml">
+			<site>
+				<feature url="features/${jar-file-name}" id="${update-id}" version="1.1.0"/>
+			</site>
+		</echoxml>
+	</target>
+	
+	<!-- write a feature.xml for eclipse update -->
+	<target name="write-feature-xml">
+		<echoxml file="${feature-folder}/feature.xml">
+			<feature
+				id="${update-id}"
+				label="Robustaclipse"
+				version="1.1.0"
+				provider-name="NTUT CSIE, Taipei Tech, Software Systems Lab."
+				plugin="${update-id}">
+ 
+				<description>
+					Release for free.
+				</description>
+
+				<copyright>
+				  Copyright 2000-2012, 版權所有
+				</copyright>
+ 
+				<license url="http://www.gnu.org/licenses/gpl.txt"/>
+ 
+				<url>
+					<update label="updates" url="這裡填你最後發布的update地址"/>
+				</url>
+			 	
+				<requires>
+					<import plugin="org.eclipse.ui.views"/>
+					<import plugin="org.eclipse.jface.text"/>
+					<import plugin="org.eclipse.ui.workbench.texteditor"/>
+					<import plugin="org.eclipse.ui.editors"/>
+					<import plugin="org.eclipse.core.runtime"/>
+					<import plugin="org.eclipse.ui.ide"/>
+					<import plugin="org.eclipse.ui"/>
+					<import plugin="org.eclipse.compare"/>
+					<import plugin="org.eclipse.jdt.ui"/>
+					<import plugin="org.eclipse.jdt.core"/>
+					<import plugin="org.eclipse.ui.console"/>
+					<import plugin="org.eclipse.debug.ui"/>
+				</requires>
+ 
+				<plugin 
+					id="${update-id}"
+					download-size="0"
+					install-size="0"
+					version="1.1.0"/>
+			</feature>
+		</echoxml>
+	</target>
+	
+	<target name="zip-product">
+		<zip destfile="${update-id}.zip" basedir="${update-folder}"/>
+	</target>
+</project>
